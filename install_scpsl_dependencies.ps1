@@ -1,3 +1,5 @@
+Install-Module -Name VcRedist -Force
+
 Write-Host "Удаляем все версии Microsoft Visual C++ Redistributable"
 Uninstall-VcRedist -Confirm:$false
 
