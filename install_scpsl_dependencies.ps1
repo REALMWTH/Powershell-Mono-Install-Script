@@ -24,10 +24,12 @@ if (test-path $temp_dir) {[void](Remove-Item $temp_dir -Recurse -Confirm:$false 
 [void](New-Item -Path 'C:\WTH_Temp' -ItemType Directory -Confirm:$false -Force)
 
 Write-Host "DirectX Redist (June 2010)"
-$directx = "$temp_dir\dxwebsetup.exe"
+$directx = "$temp_dir\directx_Jun2010_redist.exe"
 (New-Object Net.WebClient).DownloadFile('https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe', $directx)
-cmd /c start /wait $directx /Q
+cmd /c start /wait $directx /Q /C /T:"$temp_dir\DirectX\"
+cmd /c start /wait "$temp_dir\DirectX\DXSETUP.exe" /silent
 del $directx
+if (test-path $temp_dir) {[void](Remove-Item $temp_dir\DirectX -Recurse -Confirm:$false -Force)}
 
 Write-Host "Microsoft Visual C++ 2005-2022"
 $Redists_unsupported = Get-VcList -Export Unsupported | Where-Object { $_.Release -in "2005", "2008", "2010" } | Save-VcRedist -Path $temp_dir | Install-VcRedist -Silent
