@@ -1,9 +1,9 @@
-Install-Module -Name VcRedist | Out-Null
+[void](Install-Module -Name VcRedist)
 
 Write-Host "Удаляем все версии Microsoft Visual C++ Redistributable"
-Uninstall-VcRedist -Confirm:$false | Out-Null
+[void](Uninstall-VcRedist -Confirm:$false)
 
-New-Item -Path 'C:\TestTemp' -ItemType Directory | Out-Null
+[void](New-Item -Path 'C:\TestTemp' -ItemType Directory)
 $temp_dir = "C:\TestTemp"
 
 Write-Host "DirectX Redist (June 2010)"
@@ -81,7 +81,7 @@ cmd /c start /wait msiexec /i "$MonoPathx86" /q
 del $MonoPathx86
 cmd /c start /wait msiexec /i "$MonoPathx64" /q
 del $MonoPathx64
-Remove-Item '$temp_dir'
+Remove-Item $temp_dir
 
 $input = Read-Host "Рекомендуется перезагрузка. Перезагрузить? [y/n]"
 switch($input){
