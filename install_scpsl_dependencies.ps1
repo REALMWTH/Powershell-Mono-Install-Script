@@ -9,8 +9,12 @@ if ($result -eq 'Yes') {
 	Clear-DnsClientCache
 }
 
+Write-Host "Устанавливаем NuGet"
+Install-PackageProvider NuGet -Confirm:$False -Force
+Set-PSRepository PSGallery -InstallationPolicy Trusted
+
 Write-Host "Устанавливаем Powershell модуль VcRedist"
-[void](Install-Module -Name VcRedist -Force)
+[void](Install-Module -Name VcRedist -Confirm:$False -Force)
 
 Write-Host "Удаляем все версии Microsoft Visual C++ Redistributable"
 [void](Uninstall-VcRedist -Confirm:$false)
