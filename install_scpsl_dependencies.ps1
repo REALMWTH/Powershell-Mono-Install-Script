@@ -10,8 +10,8 @@ if ($result -eq 'Yes') {
 }
 
 Write-Host "Устанавливаем диспетчер пакетов NuGet"
-Install-PackageProvider NuGet -Confirm:$False -Force
-Set-PSRepository PSGallery -InstallationPolicy Trusted
+[void])Install-PackageProvider NuGet -Confirm:$False -Force)
+[void](Set-PSRepository PSGallery -InstallationPolicy Trusted)
 
 Write-Host "Устанавливаем Powershell модуль VcRedist"
 [void](Install-Module -Name VcRedist -Confirm:$False -Force)
@@ -19,7 +19,7 @@ Write-Host "Устанавливаем Powershell модуль VcRedist"
 Write-Host "Удаляем все версии Microsoft Visual C++ Redistributable"
 [void](Uninstall-VcRedist -Confirm:$false)
 
-[void](New-Item -Path 'C:\WTH_Temp' -ItemType Directory)
+[void](New-Item -Path 'C:\WTH_Temp' -ItemType Directory -Confirm:$false)
 $temp_dir = "C:\WTH_Temp"
 
 Write-Host "DirectX Redist (June 2010)"
@@ -97,7 +97,7 @@ cmd /c start /wait msiexec /i "$MonoPathx86" /q
 del $MonoPathx86
 cmd /c start /wait msiexec /i "$MonoPathx64" /q
 del $MonoPathx64
-Remove-Item $temp_dir
+[void](Remove-Item $temp_dir -Recurse -Force -Confirm:$false)
 
 $result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется перезагрузка. Перезагрузить?' , "" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
 if ($result -eq 'Yes') {
