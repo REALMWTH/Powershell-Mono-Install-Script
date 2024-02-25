@@ -10,7 +10,7 @@ if ($result -eq 'Yes') {
 }
 
 Write-Host "Устанавливаем диспетчер пакетов NuGet"
-[void](Install-PackageProvider NuGet -Confirm:$False -Force)
+[void](Install-PackageProvider NuGet -Force)
 [void](Set-PSRepository PSGallery -InstallationPolicy Trusted)
 
 Write-Host "Устанавливаем Powershell модуль VcRedist"
