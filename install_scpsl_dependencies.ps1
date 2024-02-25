@@ -4,8 +4,8 @@ Write-Host "Устанавливаем Powershell модуль VcRedist"
 Write-Host "Удаляем все версии Microsoft Visual C++ Redistributable"
 [void](Uninstall-VcRedist -Confirm:$false)
 
-[void](New-Item -Path 'C:\TestTemp' -ItemType Directory)
-$temp_dir = "C:\TestTemp"
+[void](New-Item -Path 'C:\WTH_Temp' -ItemType Directory)
+$temp_dir = "C:\WTH_Temp"
 
 Write-Host "DirectX Redist (June 2010)"
 $directx = "$temp_dir\dxwebsetup.exe"
