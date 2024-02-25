@@ -9,7 +9,7 @@ if ($result -eq 'Yes') {
 	Clear-DnsClientCache
 }
 
-Write-Host "Устанавливаем NuGet"
+Write-Host "Устанавливаем диспетчер пакетов NuGet"
 Install-PackageProvider NuGet -Confirm:$False -Force
 Set-PSRepository PSGallery -InstallationPolicy Trusted
 
