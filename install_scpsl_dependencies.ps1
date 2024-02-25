@@ -3,7 +3,7 @@ Uninstall-VcRedist -Confirm:$false
 
 Write-Host "DirectX Redist (June 2010)"
 $directx = "$($env:TEMP)\dxwebsetup.exe"
-(New-Object Net.WebClient).DownloadFile('https://download.microsoft.com/download/8/B/4/8B42259F-5D70-43F4-AC2E-4B208FD8D66A/vcredist_x64.EXE', $directx)
+(New-Object Net.WebClient).DownloadFile('https://download.microsoft.com/download/1/7/1/1718CCC4-6315-4D8E-9543-8E28A4E18C4C/dxwebsetup.exe', $directx)
 cmd /c start /wait $directx /Q
 del $directx
 
