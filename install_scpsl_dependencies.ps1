@@ -20,7 +20,7 @@ Write-Host "Удаляем все версии Microsoft Visual C++ Redistributable"
 [void](Uninstall-VcRedist -Confirm:$false)
 
 $temp_dir = "C:\WTH_Temp"
-[void](Remove-Item $temp_dir -Recurse -Confirm:$false -Force)
+if (test-path $temp_dir) {Remove-Item $temp_dir -Recurse -Confirm:$false -Force}
 [void](New-Item -Path 'C:\WTH_Temp' -ItemType Directory -Confirm:$false -Force)
 
 Write-Host "DirectX Redist (June 2010)"
