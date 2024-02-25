@@ -1,10 +1,10 @@
 Install-Module -Name VcRedist
 
-New-Item -Path 'C:\TestTemp' -ItemType Directory
-$temp_dir = "C:\TestTemp"
-
 Write-Host "Удаляем все версии Microsoft Visual C++ Redistributable"
 Uninstall-VcRedist -Confirm:$false
+
+New-Item -Path 'C:\TestTemp' -ItemType Directory
+$temp_dir = "C:\TestTemp"
 
 Write-Host "DirectX Redist (June 2010)"
 $directx = "$temp_dir\dxwebsetup.exe"
