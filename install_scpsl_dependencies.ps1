@@ -1,3 +1,14 @@
+$input = Read-Host "Рекомендуется установить Cloudflare DNS сервер на текущий сетевой интерфейс. Установить? [y/n]"
+switch($input){
+          y{
+			$PrimaryDNS = '1.1.1.1'
+			$SecondaryDNS = '1.0.0.1'
+			$PhysAdapter = Get-NetAdapter -Physical
+			$PhysAdapter | Get-DnsClientServerAddress -AddressFamily IPv4 | Set-DnsClientServerAddress -ServerAddresses ($PrimaryDNS, $SecondaryDNS)
+			Clear-DnsClientCache
+		  }
+}
+
 Write-Host "Устанавливаем Powershell модуль VcRedist"
 [void](Install-Module -Name VcRedist -Force)
 
