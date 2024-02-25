@@ -1,12 +1,12 @@
-$input = Read-Host "Рекомендуется установить Cloudflare DNS сервер на текущий сетевой интерфейс. Установить? [y/n]"
-switch($input){
-          y{
-			$PrimaryDNS = '1.1.1.1'
-			$SecondaryDNS = '1.0.0.1'
-			$PhysAdapter = Get-NetAdapter -Physical
-			$PhysAdapter | Get-DnsClientServerAddress -AddressFamily IPv4 | Set-DnsClientServerAddress -ServerAddresses ($PrimaryDNS, $SecondaryDNS)
-			Clear-DnsClientCache
-		  }
+[System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
+
+$result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется установить Cloudflare DNS серверы на текущий сетевой интерфейс. Установить?' , "" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+if ($result -eq 'Yes') {
+	$PrimaryDNS = '1.1.1.1'
+	$SecondaryDNS = '1.0.0.1'
+	$PhysAdapter = Get-NetAdapter -Physical
+	$PhysAdapter | Get-DnsClientServerAddress -AddressFamily IPv4 | Set-DnsClientServerAddress -ServerAddresses ($PrimaryDNS, $SecondaryDNS)
+	Clear-DnsClientCache
 }
 
 Write-Host "Устанавливаем Powershell модуль VcRedist"
@@ -95,9 +95,7 @@ cmd /c start /wait msiexec /i "$MonoPathx64" /q
 del $MonoPathx64
 Remove-Item $temp_dir
 
-$input = Read-Host "Рекомендуется перезагрузка. Перезагрузить? [y/n]"
-switch($input){
-          y{Restart-computer -Force -Confirm:$false}
-          n{exit}
-    default{write-warning "Введите y или n"}
+$result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется перезагрузка. Перезагрузить?' , "" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+if ($result -eq 'Yes') {
+	Restart-computer -Force -Confirm:$false
 }
