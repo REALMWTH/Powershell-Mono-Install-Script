@@ -1,3 +1,4 @@
+Write-Host "Устанавливаем Powershell модуль VcRedist"
 [void](Install-Module -Name VcRedist)
 
 Write-Host "Удаляем все версии Microsoft Visual C++ Redistributable"
