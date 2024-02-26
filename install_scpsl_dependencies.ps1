@@ -1,6 +1,6 @@
 $host.ui.RawUI.WindowTitle = "Welcome To Hell SCP:SL Dependencies downloader and installer"
 
-Write-Output "Загрузчик и инсталлятор зависимостей для SCP:SL от Welcome To Hell (https://discord.scpsl.ru)"
+Write-Output "Загрузчик и инсталлятор зависимостей для SCP:SL от Welcome To Hell (https://discord.scpsl.ru)`n"
 
 # Disable warnings and errors output
 $ErrorActionPreference = "SilentlyContinue"
