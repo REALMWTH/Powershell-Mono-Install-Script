@@ -69,6 +69,9 @@ Write-Output "Microsoft Visual C++ 2005-2022"
 $Redists_unsupported = Get-VcList -Export Unsupported | Where-Object { $_.Release -in "2005", "2008", "2010" } | Save-VcRedist -Path $temp_dir | Install-VcRedist -Silent -Force
 $Redists = Get-VcList -Release 2012, 2013, 2022 | Save-VcRedist -Path $temp_dir | Install-VcRedist -Silent -Force
 
+Remove-Module -Name VcRedist
+Uninstall-Module -Name VcRedist -AllVersions -Force
+
 if (-Not(Test-Path -Path $env:ProgramFiles\Mono\bin\mono.exe -PathType Leaf))
 {
 	Write-Output "Mono Stable"
