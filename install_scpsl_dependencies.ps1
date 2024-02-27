@@ -29,7 +29,7 @@ if (-Not($DnsAddress.ServerAddresses[0] -eq $PrimaryDNS -and $DnsAddress.ServerA
 }
 
 Write-Output "Устанавливаем диспетчер пакетов NuGet"
-Get-PackageProvider -Name "NuGet" -ErrorAction SilentlyContinue -ForceBootstrap
+[void](Get-PackageProvider -Name "NuGet" -ErrorAction SilentlyContinue -ForceBootstrap)
 
 Write-Output "Проверяем политику установки для PSGallery"
 $policy = Get-PSRepository -Name PSGallery
