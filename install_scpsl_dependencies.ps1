@@ -3,10 +3,14 @@ Write-Host "Загрузчик и инсталлятор зависимостей для SCP:SL от " -ForegroundColo
 Write-Host "Welcome To Hell" -ForegroundColor red
 Write-Host "https://discord.scpsl.ru" -ForegroundColor white -BackgroundColor darkred
 Write-Host ""
+
 # Disable warnings and errors output
 $ErrorActionPreference = "SilentlyContinue"
 $WarningPreference = "SilentlyContinue"
 function global:Write-Host() {}
+
+# Do not prompt user for confirmations
+Set-Variable -Name 'ConfirmPreference' -Value 'None' -Scope Global
 
 [void]([System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms"))
 
