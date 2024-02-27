@@ -29,7 +29,7 @@ if (-Not($DnsAddress.ServerAddresses[0] -eq $PrimaryDNS -and $DnsAddress.ServerA
 }
 
 
-if (-Not(Get-PackageProvider -Name "NuGet"))
+if (-Not(Get-PackageProvider -Name "NuGet" -ErrorAction SilentlyContinue))
 {
 	Write-Output "Устанавливаем диспетчер пакетов NuGet"
 	[void](Install-PackageProvider NuGet -ForceBootstrap -Confirm:$false)
