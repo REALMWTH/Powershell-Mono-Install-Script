@@ -33,27 +33,29 @@ function RestartNtpClient
 		)
 	
 		[void](w32tm /unregister)
-		[void](net stop w32time)
-		
-		foreach($service in (Get-Service -Name "w32time"))
-		{
-			$service.WaitForStatus("Stopped", '00:00:5')
-		}
-		
+		[void](Start-Sleep -Milliseconds 100)
 		[void](w32tm /register)
+		[void](Start-Sleep -Milliseconds 100)
+		
+		[void](Stop-Service -Name "w32time" -Confirm:$False)
+		[void]($service = Get-Service -Name "w32time")
+		[void]($service.WaitForStatus("Stopped", '00:00:5'))
+		
+		[void](Start-Sleep -Milliseconds 100)
+		
 		
 		# Bypass time resync max difference
 		[void]($origMaxNegPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxNegPhaseCorrection')
 		[void]($origMaxPosPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxPosPhaseCorrection')
 
 		SetMaxTimeCorrection
+		[void](Start-Sleep -Milliseconds 100)
 
-		[void](net start w32time)
+		[void](Start-Service -Name "w32time" -Confirm:$False)
+		$service = Get-Service -Name "w32time"
+		$service.WaitForStatus("Running", '00:00:5')
 		
-		foreach($service in (Get-Service -Name "w32time"))
-		{
-			$service.WaitForStatus("Running", '00:00:5')
-		}
+		[void](Start-Sleep -Milliseconds 100)
 		
 		if ($setNtpServer -eq $True)
 		{
@@ -134,7 +136,7 @@ if ((CheckCurrentNtpServer) -eq $False)
 Write-Output "Проверяем, выставлен ли NTP сервер ru.pool.ntp.org"
 
 $ntp_server = (w32tm /query /source) -Split ","
-$ntp_server = $ntp_server.Trim(" ")
+$ntp_server = $ntp_server[0].Trim(" ")
 if (-Not($ntp_server -Match 'ru.pool.ntp.org'))
 {
 	$result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется изменить NTP сервер на ru.pool.ntp.org' + [System.Environment]::NewLine + 'Выставить другой NTP сервер?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
