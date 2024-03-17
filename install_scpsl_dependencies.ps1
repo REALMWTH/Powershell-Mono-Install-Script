@@ -72,8 +72,10 @@ function RestartNtpClient
 
 function CheckCurrentNtpServer
 {
-	$ntp_server = ((w32tm /query /source) -Split ",")[0]
-	if ((w32tm /stripchart /computer:$ntp_server /dataonly /samples:1) -Match "0x")
+	$ntp_server = (w32tm /query /source) -Split ","
+	$ntp_server = $ntp_server.Trim(" ")
+	$ntp_status = w32tm /stripchart /computer:$ntp_server /dataonly /samples:1
+	if ($ntp_status -Match "0x")
 	{
 		return $False
 	}
