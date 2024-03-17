@@ -1,17 +1,17 @@
 # Functions
 function SetMaxTimeCorrection
 {	
-	New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxNegPhaseCorrection' -Value 4294967295 -PropertyType DWORD -Force
-	New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxPosPhaseCorrection' -Value 4294967295 -PropertyType DWORD -Force
+	[void](New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxNegPhaseCorrection' -Value 4294967295 -PropertyType DWORD -Force)
+	[void](New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxPosPhaseCorrection' -Value 4294967295 -PropertyType DWORD -Force)
 }
 
 function SetNtpServer
 {	
-	$RegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers'
-	New-ItemProperty -Path $RegistryPath -Name '3' -Value 'ru.pool.ntp.org' -PropertyType String -Force	
-	New-ItemProperty -Path $RegistryPath -Name '(Default)' -Value '3' -PropertyType String -Force
-	w32tm /config /manualpeerlist:"ru.pool.ntp.org" /syncfromflags:manual /reliable:yes /update
-	w32tm /resync /rediscover
+	[void]($RegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers')
+	[void](New-ItemProperty -Path $RegistryPath -Name '3' -Value 'ru.pool.ntp.org' -PropertyType String -Force)
+	[void](New-ItemProperty -Path $RegistryPath -Name '(Default)' -Value '3' -PropertyType String -Force)
+	[void](w32tm /config /manualpeerlist:"ru.pool.ntp.org" /syncfromflags:manual /reliable:yes /update)
+	[void](w32tm /resync /rediscover)
 }
 
 function RestoreMaxTimeCorrection
@@ -21,8 +21,8 @@ function RestoreMaxTimeCorrection
 		[int]$origMaxPosPhaseCorrection
 	)
 	
-	New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxNegPhaseCorrection' -Value $origMaxNegPhaseCorrection -PropertyType DWORD -Force
-	New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxPosPhaseCorrection' -Value $origMaxPosPhaseCorrection -PropertyType DWORD -Force
+	[void](New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxNegPhaseCorrection' -Value $origMaxNegPhaseCorrection -PropertyType DWORD -Force)
+	[void](New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxPosPhaseCorrection' -Value $origMaxPosPhaseCorrection -PropertyType DWORD -Force)
 }
 
 
@@ -32,8 +32,8 @@ function RestartNtpClient
 			[bool]$setNtpServer
 		)
 	
-		w32tm /unregister
-		net stop w32time /y
+		[void](w32tm /unregister)
+		[void](net stop w32time /y)
 		
 		foreach($service in (Get-Service -Name "w32time"))
 		{
@@ -43,12 +43,12 @@ function RestartNtpClient
 		w32tm /register
 		
 		# Bypass time resync max difference
-		$origMaxNegPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxNegPhaseCorrection'
-		$origMaxPosPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxPosPhaseCorrection'
+		[void]($origMaxNegPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxNegPhaseCorrection')
+		[void]($origMaxPosPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxPosPhaseCorrection')
 
 		SetMaxTimeCorrection
 		
-		net start w32time
+		[void](net start w32time)
 		
 		foreach($service in (Get-Service -Name "w32time"))
 		{
@@ -61,7 +61,7 @@ function RestartNtpClient
 		}
 		else
 		{
-			w32tm /resync /rediscover
+			[void](w32tm /resync /rediscover)
 		}
 		
 		# Restore original registry values
@@ -71,7 +71,7 @@ function RestartNtpClient
 function CheckCurrentNtpServer
 {
 	$ntp_server = ((w32tm /query /source) -Split ",")[0]
-	if ((w32tm /stripchart /computer:$ntp_server /dataonly /samples:1) -Match "error:")
+	if ((w32tm /stripchart /computer:$ntp_server /dataonly /samples:1) -Match "0x")
 	{
 		return $False
 	}
@@ -80,7 +80,7 @@ function CheckCurrentNtpServer
 
 function CheckIfNtpClientIsRunning
 {
-	if ((w32tm /query /configuration) -Match "The following error occurred")
+	if ((w32tm /query /configuration) -Match "0x")
 	{
 		return $False
 	}
