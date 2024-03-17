@@ -33,7 +33,7 @@ function RestartNtpClient
 		)
 	
 		[void](w32tm /unregister)
-		[void](Stop-Service -Name "w32time" -Force -Confirm)
+		[void](Stop-Service -Name "w32time" -Force -Confirm:$False)
 		#[void](net stop w32time)
 		
 		foreach($service in (Get-Service -Name "w32time"))
@@ -49,7 +49,7 @@ function RestartNtpClient
 
 		SetMaxTimeCorrection
 		
-		[void](Start-Service -Name "w32time" -Force -Confirm)
+		[void](Start-Service -Name "w32time" -Force -Confirm:$False)
 		#[void](net start w32time)
 		
 		foreach($service in (Get-Service -Name "w32time"))
@@ -211,11 +211,11 @@ if ($result -eq 'Yes') {
 	[void](Install-Module -Name VcRedist -Confirm:$False -Force)
 
 	Write-Output "Удаляем все версии Microsoft Visual C++ Redistributable"
-	[void](Uninstall-VcRedist -Confirm:$false)
+	[void](Uninstall-VcRedist -Confirm:$False)
 
 	$temp_dir = "C:\WTH_Temp"
-	if (test-path $temp_dir) {[void](Remove-Item $temp_dir -Recurse -Confirm:$false -Force)}
-	[void](New-Item -Path 'C:\WTH_Temp' -ItemType Directory -Confirm:$false -Force)
+	if (test-path $temp_dir) {[void](Remove-Item $temp_dir -Recurse -Confirm:$False -Force)}
+	[void](New-Item -Path 'C:\WTH_Temp' -ItemType Directory -Confirm:$False -Force)
 
 	Write-Output "DirectX Redist (June 2010)"
 	$directx = "$temp_dir\directx_Jun2010_redist.exe"
@@ -223,7 +223,7 @@ if ($result -eq 'Yes') {
 	cmd /c start /wait $directx /Q /C /T:"$temp_dir\DirectX\"
 	cmd /c start /wait "$temp_dir\DirectX\DXSETUP.exe" /silent
 	del $directx
-	if (test-path $temp_dir) {[void](Remove-Item $temp_dir\DirectX -Recurse -Confirm:$false -Force)}
+	if (test-path $temp_dir) {[void](Remove-Item $temp_dir\DirectX -Recurse -Confirm:$False -Force)}
 
 	Write-Output "Microsoft Visual C++ 2005-2022"
 	$Redists_unsupported = Get-VcList -Export Unsupported | Where-Object { $_.Release -in "2005", "2008", "2010" } | Save-VcRedist -Path $temp_dir | Install-VcRedist -Silent -Force
@@ -268,9 +268,9 @@ if ($result -eq 'Yes') {
 	del $dotnetscript
 }
 
-[void](Remove-Item $temp_dir -Recurse -Force -Confirm:$false)
+[void](Remove-Item $temp_dir -Recurse -Force -Confirm:$False)
 
 $result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется перезагрузка. Перезагрузить?' , "Все зависимости успешно установлены!" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
 if ($result -eq 'Yes') {
-	Restart-computer -Force -Confirm:$false
+	Restart-computer -Force -Confirm:$False
 }
