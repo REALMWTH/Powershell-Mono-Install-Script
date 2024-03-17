@@ -25,7 +25,6 @@ if ($ntp_status -Match "The following error occurred")
 	$result = [System.Windows.Forms.MessageBox]::Show('Не включена синхронизация времени через интернет.' + [System.Environment]::NewLine + 'Без этого невозможно установить SSL соединение с центральным сервером SCP:SL.' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Включить?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
 	if ($result -eq 'Yes') {
 		[void](w32tm /unregister)
-		# [void](net stop w32time)
 		[void](w32tm /register)
 		[void](net start w32time)
 		[void](w32tm /resync /rediscover)
@@ -43,10 +42,10 @@ if (-Not($ntp_server -Match '0.ru.pool.ntp.org'))
 	$result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется изменить NTP сервер.' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Задать NTP сервер 0.ru.pool.ntp.org?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
 	if ($result -eq 'Yes') {
 		$RegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers’
-		New-ItemProperty -Path $RegistryPath -Name '3' -Value '0.ru.pool.ntp.org' -PropertyType String -Force
-		New-ItemProperty -Path $RegistryPath -Name '(Default)' -Value '3' -PropertyType String -Force
-		w32tm /config /manualpeerlist:"0.ru.pool.ntp.org" /syncfromflags:manual /reliable:yes /update
-		w32tm /resync /rediscover
+		[void](New-ItemProperty -Path $RegistryPath -Name '3' -Value '0.ru.pool.ntp.org' -PropertyType String -Force)
+		[void](New-ItemProperty -Path $RegistryPath -Name '(Default)' -Value '3' -PropertyType String -Force)
+		[void](w32tm /config /manualpeerlist:"0.ru.pool.ntp.org" /syncfromflags:manual /reliable:yes /update)
+		[void](w32tm /resync /rediscover)
 	}
 }
 
