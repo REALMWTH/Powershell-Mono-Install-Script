@@ -41,11 +41,22 @@ if (-Not($ntp_server -Match '0.ru.pool.ntp.org'))
 {
 	$result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется изменить NTP сервер.' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Задать NTP сервер 0.ru.pool.ntp.org?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
 	if ($result -eq 'Yes') {
-		$RegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers’
-		[void](New-ItemProperty -Path $RegistryPath -Name '3' -Value '0.ru.pool.ntp.org' -PropertyType String -Force)
+		$RegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers'
+		[void](New-ItemProperty -Path $RegistryPath -Name '3' -Value '0.ru.pool.ntp.org' -PropertyType String -Force)	
 		[void](New-ItemProperty -Path $RegistryPath -Name '(Default)' -Value '3' -PropertyType String -Force)
 		[void](w32tm /config /manualpeerlist:"0.ru.pool.ntp.org" /syncfromflags:manual /reliable:yes /update)
+		
+		# Bypass time resync max difference
+		[void]($origMaxNegPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxNegPhaseCorrection')
+		[void]($origMaxPosPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxPosPhaseCorrection')
+		[void](New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxNegPhaseCorrection' -Value 4294967295 -PropertyType DWORD -Force)
+		[void](New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxPosPhaseCorrection' -Value 4294967295 -PropertyType DWORD -Force)
+		
 		[void](w32tm /resync /rediscover)
+		
+		# Restore original registry values
+		[void](New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxNegPhaseCorrection' -Value $origMaxNegPhaseCorrection -PropertyType DWORD -Force)
+		[void](New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxPosPhaseCorrection' -Value $origMaxPosPhaseCorrection -PropertyType DWORD -Force)
 	}
 }
 
