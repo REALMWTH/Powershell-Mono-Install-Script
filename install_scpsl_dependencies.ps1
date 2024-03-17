@@ -1,3 +1,94 @@
+# Functions
+function SetMaxTimeCorrection
+{	
+	New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxNegPhaseCorrection' -Value 4294967295 -PropertyType DWORD -Force
+	New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxPosPhaseCorrection' -Value 4294967295 -PropertyType DWORD -Force
+}
+
+function SetNtpServer
+{	
+	$RegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers'
+	New-ItemProperty -Path $RegistryPath -Name '3' -Value 'ru.pool.ntp.org' -PropertyType String -Force	
+	New-ItemProperty -Path $RegistryPath -Name '(Default)' -Value '3' -PropertyType String -Force
+	w32tm /config /manualpeerlist:"ru.pool.ntp.org" /syncfromflags:manual /reliable:yes /update
+	w32tm /resync /rediscover
+}
+
+function RestoreMaxTimeCorrection
+{
+	Param (
+		[int]$origMaxNegPhaseCorrection,
+		[int]$origMaxPosPhaseCorrection
+	)
+	
+	New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxNegPhaseCorrection' -Value $origMaxNegPhaseCorrection -PropertyType DWORD -Force
+	New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxPosPhaseCorrection' -Value $origMaxPosPhaseCorrection -PropertyType DWORD -Force
+}
+
+
+function RestartNtpClient
+{
+		Param (
+			[bool]$setNtpServer
+		)
+	
+		w32tm /unregister
+		net stop w32time /y
+		
+		foreach($service in (Get-Service -Name "w32time"))
+		{
+			$service.WaitForStatus("Stopped", '00:00:5')
+		}
+		
+		w32tm /register
+		
+		# Bypass time resync max difference
+		$origMaxNegPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxNegPhaseCorrection'
+		$origMaxPosPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxPosPhaseCorrection'
+
+		SetMaxTimeCorrection
+		
+		net start w32time
+		
+		foreach($service in (Get-Service -Name "w32time"))
+		{
+			$service.WaitForStatus("Running", '00:00:5')
+		}
+		
+		if ($setNtpServer -eq $True)
+		{
+			SetNtpServer
+		}
+		else
+		{
+			w32tm /resync /rediscover
+		}
+		
+		# Restore original registry values
+		RestoreMaxTimeCorrection -origMaxNegPhaseCorrection $origMaxNegPhaseCorrection -origMaxPosPhaseCorrection $origMaxPosPhaseCorrection
+}
+
+function CheckCurrentNtpServer
+{
+	$ntp_server = ((w32tm /query /source) -Split ",")[0]
+	if ((w32tm /stripchart /computer:$ntp_server /dataonly /samples:1) -Match "error:")
+	{
+		return $False
+	}
+	return $True
+}
+
+function CheckIfNtpClientIsRunning
+{
+	if ((w32tm /query /configuration) -Match "The following error occurred")
+	{
+		return $False
+	}
+	return $True
+}
+
+# Set title and advertisement
+
 $host.ui.RawUI.WindowTitle = "Welcome To Hell SCP:SL Dependencies downloader and installer"
 Write-Host "Загрузчик и инсталлятор зависимостей для SCP:SL от " -ForegroundColor white -nonewline
 Write-Host "Welcome To Hell" -ForegroundColor red
@@ -18,45 +109,31 @@ Set-Variable -Name 'ConfirmPreference' -Value 'None' -Scope Global
 
 Write-Output "Проверяем, включена ли синхронизация времени по сети"
 
-$ntp_status = w32tm /query /configuration
-
-if ($ntp_status -Match "The following error occurred")
+if ((CheckIfNtpClientIsRunning) -eq $False)
 {
-	$result = [System.Windows.Forms.MessageBox]::Show('Не включена синхронизация времени через интернет.' + [System.Environment]::NewLine + 'Без этого невозможно установить SSL соединение с центральным сервером SCP:SL.' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Включить?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+	$result = [System.Windows.Forms.MessageBox]::Show('Не включена синхронизация времени через интернет.' + [System.Environment]::NewLine + 'Без этого невозможно установить SSL соединение с центральным сервером SCP:SL.' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Включить синхронизацию времени через интернет?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Error)
 	if ($result -eq 'Yes') {
-		[void](w32tm /unregister)
-		[void](w32tm /register)
-		[void](net start w32time)
-		[void](w32tm /resync /rediscover)
+		RestartNtpClient -setNtpServer $False
 	}
 }
 
-# Checking if recommended Russian NTP server is set. If not, ask to set.
+Write-Output "Проверяем, работает ли соединение с текущим NTP сервером"
 
-Write-Output "Проверяем, выставлен ли рекомендуемый NTP сервер"
+if ((CheckCurrentNtpServer) -eq $False)
+{
+	$result = [System.Windows.Forms.MessageBox]::Show('Синхронизация времени, необходимая для установки SSL соединения с центральным сервером SCP:SL, с установленным NTP сервером, невозможна! Сервер не отвечает на запросы.' + [System.Environment]::NewLine + 'Изменить NTP сервер на ru.pool.ntp.org?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Error)
+	if ($result -eq 'Yes') {
+		RestartNtpClient -setNtpServer $True
+	}
+}
 
-$ntp_server = w32tm /query /source
+Write-Output "Проверяем, выставлен ли NTP сервер ru.pool.ntp.org"
 
 if (-Not($ntp_server -Match 'ru.pool.ntp.org'))
 {
-	$result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется изменить NTP сервер.' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Задать NTP сервер ru.pool.ntp.org?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+	$result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется изменить NTP сервер на ru.pool.ntp.org' + [System.Environment]::NewLine + 'Выставить другой NTP сервер?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
 	if ($result -eq 'Yes') {
-		$RegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers'
-		[void](New-ItemProperty -Path $RegistryPath -Name '3' -Value 'ru.pool.ntp.org' -PropertyType String -Force)	
-		[void](New-ItemProperty -Path $RegistryPath -Name '(Default)' -Value '3' -PropertyType String -Force)
-		[void](w32tm /config /manualpeerlist:"ru.pool.ntp.org" /syncfromflags:manual /reliable:yes /update)
-		
-		# Bypass time resync max difference
-		[void]($origMaxNegPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxNegPhaseCorrection')
-		[void]($origMaxPosPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxPosPhaseCorrection')
-		[void](New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxNegPhaseCorrection' -Value 4294967295 -PropertyType DWORD -Force)
-		[void](New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxPosPhaseCorrection' -Value 4294967295 -PropertyType DWORD -Force)
-		
-		[void](w32tm /resync /rediscover)
-		
-		# Restore original registry values
-		[void](New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxNegPhaseCorrection' -Value $origMaxNegPhaseCorrection -PropertyType DWORD -Force)
-		[void](New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' -Name 'MaxPosPhaseCorrection' -Value $origMaxPosPhaseCorrection -PropertyType DWORD -Force)
+		SetNtpServer
 	}
 }
 
@@ -115,7 +192,7 @@ $policy = Get-PSRepository -Name PSGallery
 
 if ($policy)
 {
-	if (-not($policy.InstallationPolicy -eq 'Trusted'))
+	if (-Not($policy.InstallationPolicy -eq 'Trusted'))
 	{
 		Write-Output "Выставляем доверенную политику установки для PSGallery"
 		[void](Set-PSRepository PSGallery -InstallationPolicy Trusted)
