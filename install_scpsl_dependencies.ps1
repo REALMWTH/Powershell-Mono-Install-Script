@@ -84,7 +84,9 @@ function CheckCurrentNtpServer
 
 function CheckIfNtpClientIsRunning
 {
-	if ((w32tm /query /configuration) -Match "0x")
+	$ntp_status = w32tm /query /configuration
+	$ntp_status = $ntp_status -split '\r?\n'
+	if ($ntp_status[0] -Match "0x")
 	{
 		return $False
 	}
