@@ -33,8 +33,7 @@ function RestartNtpClient
 		)
 	
 		[void](w32tm /unregister)
-		[void](Stop-Service -Name "w32time" -Force -Confirm:$False)
-		#[void](net stop w32time)
+		[void](net stop w32time)
 		
 		foreach($service in (Get-Service -Name "w32time"))
 		{
@@ -48,9 +47,8 @@ function RestartNtpClient
 		[void]($origMaxPosPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxPosPhaseCorrection')
 
 		SetMaxTimeCorrection
-		
-		[void](Start-Service -Name "w32time" -Force -Confirm:$False)
-		#[void](net start w32time)
+
+		[void](net start w32time)
 		
 		foreach($service in (Get-Service -Name "w32time"))
 		{
