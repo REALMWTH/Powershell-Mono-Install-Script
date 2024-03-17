@@ -37,14 +37,14 @@ Write-Output "Проверяем, выставлен ли рекомендуемый NTP сервер"
 
 $ntp_server = w32tm /query /source
 
-if (-Not($ntp_server -Match '0.ru.pool.ntp.org'))
+if (-Not($ntp_server -Match 'ru.pool.ntp.org'))
 {
-	$result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется изменить NTP сервер.' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Задать NTP сервер 0.ru.pool.ntp.org?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+	$result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется изменить NTP сервер.' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Задать NTP сервер ru.pool.ntp.org?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
 	if ($result -eq 'Yes') {
 		$RegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers'
-		[void](New-ItemProperty -Path $RegistryPath -Name '3' -Value '0.ru.pool.ntp.org' -PropertyType String -Force)	
+		[void](New-ItemProperty -Path $RegistryPath -Name '3' -Value 'ru.pool.ntp.org' -PropertyType String -Force)	
 		[void](New-ItemProperty -Path $RegistryPath -Name '(Default)' -Value '3' -PropertyType String -Force)
-		[void](w32tm /config /manualpeerlist:"0.ru.pool.ntp.org" /syncfromflags:manual /reliable:yes /update)
+		[void](w32tm /config /manualpeerlist:"ru.pool.ntp.org" /syncfromflags:manual /reliable:yes /update)
 		
 		# Bypass time resync max difference
 		[void]($origMaxNegPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxNegPhaseCorrection')
