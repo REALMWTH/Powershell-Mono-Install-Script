@@ -9,10 +9,50 @@ $ErrorActionPreference = "SilentlyContinue"
 $WarningPreference = "SilentlyContinue"
 function global:Write-Host() {}
 
-# Do not prompt user for confirmations
+# Do not prompt for confirmations
 Set-Variable -Name 'ConfirmPreference' -Value 'None' -Scope Global
 
 [void]([System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms"))
+
+# Checking if NTP time sync is enabled. If not, ask to enable and sync time.
+
+Write-Output "Проверяем, включена ли синхронизация времени по сети"
+
+$ntp_status = w32tm /query /configuration
+
+if ($ntp_status -Match "The following error occurred")
+{
+	$result = [System.Windows.Forms.MessageBox]::Show('Не включена синхронизация времени через интернет.' + [System.Environment]::NewLine + 'Без этого невозможно установить SSL соединение с центральным сервером SCP:SL.' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Включить?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+	if ($result -eq 'Yes') {
+		[void](w32tm /unregister)
+		# [void](net stop w32time)
+		[void](w32tm /register)
+		[void](net start w32time)
+		[void](w32tm /resync /rediscover)
+	}
+}
+
+# Checking if recommended Russian NTP server is set. If not, ask to set.
+
+Write-Output "Проверяем, выставлен ли рекомендуемый NTP сервер"
+
+$ntp_server = w32tm /query /source
+
+if (-Not($ntp_server -Match '0.ru.pool.ntp.org'))
+{
+	$result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется изменить NTP сервер.' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Задать NTP сервер 0.ru.pool.ntp.org?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+	if ($result -eq 'Yes') {
+		$RegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers’
+		New-ItemProperty -Path $RegistryPath -Name '3' -Value '0.ru.pool.ntp.org' -PropertyType String -Force
+		New-ItemProperty -Path $RegistryPath -Name '(Default)' -Value '3' -PropertyType String -Force
+		w32tm /config /manualpeerlist:"0.ru.pool.ntp.org" /syncfromflags:manual /reliable:yes /update
+		w32tm /resync /rediscover
+	}
+}
+
+# Checking if DNS servers are 1.1.1.1 and 1.0.0.1 for active network adapter with internet connection
+
+Write-Output "Проверяем, установлены ли рекомендованные DNS серверы на физическом сетевом интерфейсе, подключенному к интернету"
 
 $PhysAdapter = Get-NetAdapter -Physical
 $DnsAddress = $PhysAdapter | Get-DnsClientServerAddress -AddressFamily IPv4
@@ -28,6 +68,35 @@ if (-Not($DnsAddress.ServerAddresses[0] -eq $PrimaryDNS -and $DnsAddress.ServerA
 	}
 }
 
+# Checking if internet connection to download websites is working
+
+Write-Output "Проверяем возможность установить соединение с сайтами для дальнейшего скачивания зависимостей SCP:SL"
+
+$ProgressPreference = 'SilentlyContinue'
+
+try {
+    [void](Invoke-WebRequest -URI "https://download.microsoft.com" -UseBasicParsing)
+} catch {
+	[System.Windows.Forms.MessageBox]::Show('Невозможно установить соединение с сайтом download.microsoft.com' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Проверьте ваше интернет-соединение.' , "Ошибка" , [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+	exit
+}
+
+try {
+    [void](Invoke-WebRequest -URI "https://download.mono-project.com" -UseBasicParsing)
+} catch {
+	[System.Windows.Forms.MessageBox]::Show('Невозможно установить соединение с сайтом download.mono-project.com' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Проверьте ваше интернет-соединение.' , "Ошибка" , [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+	exit
+}
+
+try {
+    [void](Invoke-WebRequest -URI "https://dot.net" -UseBasicParsing)
+} catch {
+	[System.Windows.Forms.MessageBox]::Show('Невозможно установить соединение с сайтом dot.net' + [System.Environment]::NewLine + [System.Environment]::NewLine + 'Проверьте ваше интернет-соединение.' , "Ошибка" , [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+	exit
+}
+
+$ProgressPreference = 'Continue'
+
 Write-Output "Устанавливаем диспетчер пакетов NuGet"
 [void](Get-PackageProvider -Name "NuGet" -ErrorAction SilentlyContinue -ForceBootstrap)
 
@@ -36,7 +105,7 @@ $policy = Get-PSRepository -Name PSGallery
 
 if ($policy)
 {
-	if (-not($policy.InstallationPolicy -eq "Trusted"))
+	if (-not($policy.InstallationPolicy -eq 'Trusted'))
 	{
 		Write-Output "Выставляем доверенную политику установки для PSGallery"
 		[void](Set-PSRepository PSGallery -InstallationPolicy Trusted)
