@@ -73,7 +73,7 @@ function RestartNtpClient
 function CheckCurrentNtpServer
 {
 	$ntp_server = (w32tm /query /source) -Split ","
-	$ntp_server = $ntp_server.Trim(" ")
+	$ntp_server = $ntp_server[0].Trim(" ")
 	$ntp_status = w32tm /stripchart /computer:$ntp_server /dataonly /samples:1
 	if ($ntp_status -Match "0x")
 	{
@@ -133,6 +133,8 @@ if ((CheckCurrentNtpServer) -eq $False)
 
 Write-Output "Проверяем, выставлен ли NTP сервер ru.pool.ntp.org"
 
+$ntp_server = (w32tm /query /source) -Split ","
+$ntp_server = $ntp_server.Trim(" ")
 if (-Not($ntp_server -Match 'ru.pool.ntp.org'))
 {
 	$result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется изменить NTP сервер на ru.pool.ntp.org' + [System.Environment]::NewLine + 'Выставить другой NTP сервер?' , "Синхронизация времени" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
