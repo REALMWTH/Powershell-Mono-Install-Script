@@ -33,14 +33,15 @@ function RestartNtpClient
 		)
 	
 		[void](w32tm /unregister)
-		[void](net stop w32time /y)
+		[void](Stop-Service -Name "w32time" -Force -Confirm)
+		#[void](net stop w32time)
 		
 		foreach($service in (Get-Service -Name "w32time"))
 		{
 			$service.WaitForStatus("Stopped", '00:00:5')
 		}
 		
-		w32tm /register
+		[void](w32tm /register)
 		
 		# Bypass time resync max difference
 		[void]($origMaxNegPhaseCorrection = Get-ItemPropertyValue 'HKLM:\SYSTEM\CurrentControlSet\Services\w32time\Config' 'MaxNegPhaseCorrection')
@@ -48,7 +49,8 @@ function RestartNtpClient
 
 		SetMaxTimeCorrection
 		
-		[void](net start w32time)
+		[void](Start-Service -Name "w32time" -Force -Confirm)
+		#[void](net start w32time)
 		
 		foreach($service in (Get-Service -Name "w32time"))
 		{
@@ -203,42 +205,48 @@ if ($policy)
 	}
 }
 
-Write-Output "Устанавливаем Powershell модуль VcRedist"
-[void](Install-Module -Name VcRedist -Confirm:$False -Force)
+$result = [System.Windows.Forms.MessageBox]::Show('Установить Microsoft Visual C++ Redistributable?' , "" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+if ($result -eq 'Yes') {
+	Write-Output "Устанавливаем Powershell модуль VcRedist"
+	[void](Install-Module -Name VcRedist -Confirm:$False -Force)
 
-Write-Output "Удаляем все версии Microsoft Visual C++ Redistributable"
-[void](Uninstall-VcRedist -Confirm:$false)
+	Write-Output "Удаляем все версии Microsoft Visual C++ Redistributable"
+	[void](Uninstall-VcRedist -Confirm:$false)
 
-$temp_dir = "C:\WTH_Temp"
-if (test-path $temp_dir) {[void](Remove-Item $temp_dir -Recurse -Confirm:$false -Force)}
-[void](New-Item -Path 'C:\WTH_Temp' -ItemType Directory -Confirm:$false -Force)
+	$temp_dir = "C:\WTH_Temp"
+	if (test-path $temp_dir) {[void](Remove-Item $temp_dir -Recurse -Confirm:$false -Force)}
+	[void](New-Item -Path 'C:\WTH_Temp' -ItemType Directory -Confirm:$false -Force)
 
-Write-Output "DirectX Redist (June 2010)"
-$directx = "$temp_dir\directx_Jun2010_redist.exe"
-Start-BitsTransfer -Source 'https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe' -Destination $directx
-cmd /c start /wait $directx /Q /C /T:"$temp_dir\DirectX\"
-cmd /c start /wait "$temp_dir\DirectX\DXSETUP.exe" /silent
-del $directx
-if (test-path $temp_dir) {[void](Remove-Item $temp_dir\DirectX -Recurse -Confirm:$false -Force)}
+	Write-Output "DirectX Redist (June 2010)"
+	$directx = "$temp_dir\directx_Jun2010_redist.exe"
+	Start-BitsTransfer -Source 'https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe' -Destination $directx
+	cmd /c start /wait $directx /Q /C /T:"$temp_dir\DirectX\"
+	cmd /c start /wait "$temp_dir\DirectX\DXSETUP.exe" /silent
+	del $directx
+	if (test-path $temp_dir) {[void](Remove-Item $temp_dir\DirectX -Recurse -Confirm:$false -Force)}
 
-Write-Output "Microsoft Visual C++ 2005-2022"
-$Redists_unsupported = Get-VcList -Export Unsupported | Where-Object { $_.Release -in "2005", "2008", "2010" } | Save-VcRedist -Path $temp_dir | Install-VcRedist -Silent -Force
-$Redists = Get-VcList -Release 2012, 2013, 2022 | Save-VcRedist -Path $temp_dir | Install-VcRedist -Silent -Force
+	Write-Output "Microsoft Visual C++ 2005-2022"
+	$Redists_unsupported = Get-VcList -Export Unsupported | Where-Object { $_.Release -in "2005", "2008", "2010" } | Save-VcRedist -Path $temp_dir | Install-VcRedist -Silent -Force
+	$Redists = Get-VcList -Release 2012, 2013, 2022 | Save-VcRedist -Path $temp_dir | Install-VcRedist -Silent -Force
 
-Remove-Module -Name VcRedist
-Uninstall-Module -Name VcRedist -AllVersions -Force
+	Remove-Module -Name VcRedist
+	Uninstall-Module -Name VcRedist -AllVersions -Force
+}
 
 if (-Not(Test-Path -Path $env:ProgramFiles\Mono\bin\mono.exe -PathType Leaf))
 {
-	Write-Output "Mono Stable"
-	$MonoPathx86 = "$temp_dir\mono-latest-x86-stable.msi"
-	$MonoPathx64 = "$temp_dir\mono-latest-x64-stable.msi"
-	Start-BitsTransfer -Source 'https://download.mono-project.com/archive/mono-latest-x86-stable.msi' -Destination $MonoPathx86
-	Start-BitsTransfer -Source 'https://download.mono-project.com/archive/mono-latest-x64-stable.msi' -Destination $MonoPathx64
-	cmd /c start /wait msiexec /i "$MonoPathx86" /q
-	del $MonoPathx86
-	cmd /c start /wait msiexec /i "$MonoPathx64" /q
-	del $MonoPathx64
+	$result = [System.Windows.Forms.MessageBox]::Show('Установить Mono?' , "" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+	if ($result -eq 'Yes') {
+		Write-Output "Mono Stable"
+		$MonoPathx86 = "$temp_dir\mono-latest-x86-stable.msi"
+		$MonoPathx64 = "$temp_dir\mono-latest-x64-stable.msi"
+		Start-BitsTransfer -Source 'https://download.mono-project.com/archive/mono-latest-x86-stable.msi' -Destination $MonoPathx86
+		Start-BitsTransfer -Source 'https://download.mono-project.com/archive/mono-latest-x64-stable.msi' -Destination $MonoPathx64
+		cmd /c start /wait msiexec /i "$MonoPathx86" /q
+		del $MonoPathx86
+		cmd /c start /wait msiexec /i "$MonoPathx64" /q
+		del $MonoPathx64
+	}
 }
 
 $result = [System.Windows.Forms.MessageBox]::Show('Рекомендуется установить дополнительные зависимости. Установить?' , "" , [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
